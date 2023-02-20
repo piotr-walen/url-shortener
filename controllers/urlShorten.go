@@ -44,6 +44,7 @@ func UrlShorten(w http.ResponseWriter, r *http.Request) {
 
 	response := UrlShortenResponse{Hash: hash}
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, "Cannot send request response", http.StatusInternalServerError)

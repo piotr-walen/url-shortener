@@ -19,8 +19,9 @@ func loadVariable[T primitive](
 	name string,
 	required bool,
 	parse func(string) (T, error),
+	set func(T),
 	report func(error),
-) (variable T, loaded bool) {
+) {
 	value, loaded := os.LookupEnv(name)
 	if !loaded && required {
 		report(errors.New("ENV: " + name + " is required"))
@@ -34,7 +35,7 @@ func loadVariable[T primitive](
 		report(errors.New("ENV: " + name + " has invalid value: " + value))
 		return
 	}
-	return
+	set(variable)
 }
 
 type reporter struct {
@@ -69,7 +70,7 @@ const (
 	DEFAULT_LOG_TRAFFIC    = true
 )
 
-var config = Config{
+var c = Config{
 	ADDR:           DEFAULT_ADDR,
 	MAX_URL_LENGTH: DEFAULT_MAX_URL_LENGTH,
 	LOG_TRAFFIC:    DEFAULT_LOG_TRAFFIC,
@@ -79,18 +80,12 @@ func ParseConfig() error {
 	r := reporter{
 		reportedErrors: []error{},
 	}
-	if ADDR, loaded := loadVariable("ADDR", false, noop, r.report); loaded {
-		config.ADDR = ADDR
-	}
-	if LOG_TRAFFIC, loaded := loadVariable("LOG_TRAFFIC", false, strconv.ParseBool, r.report); loaded {
-		config.LOG_TRAFFIC = LOG_TRAFFIC
-	}
-	if MAX_URL_LENGTH, loaded := loadVariable("MAX_URL_LENGTH", false, strconv.Atoi, r.report); loaded {
-		config.MAX_URL_LENGTH = MAX_URL_LENGTH
-	}
+	loadVariable("ADDR", false, noop, func(v string) { c.ADDR = v }, r.report)
+	loadVariable("LOG_TRAFFIC", false, strconv.ParseBool, func(v bool) { c.LOG_TRAFFIC = v }, r.report)
+	loadVariable("MAX_URL_LENGTH", false, strconv.Atoi, func(v int) { c.MAX_URL_LENGTH = v }, r.report)
 	return r.mergeErrors()
 }
 
 func GetConfig() *Config {
-	return &config
+	return &c
 }

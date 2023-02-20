@@ -7,24 +7,6 @@ import (
 	"strings"
 )
 
-type Config struct {
-	MAX_URL_LENGTH int
-	ADDR           string
-	LOG_TRAFFIC    bool
-}
-
-var defaultConfig = Config{
-	ADDR:           ":8000",
-	MAX_URL_LENGTH: 6,
-	LOG_TRAFFIC:    true,
-}
-
-var config = Config{}
-
-func setConfig(newConfig Config) {
-	config = newConfig
-}
-
 type primitive interface {
 	string | int | bool
 }
@@ -35,24 +17,24 @@ func noop(v string) (string, error) {
 
 func loadVariable[T primitive](
 	name string,
+	required bool,
 	parse func(string) (T, error),
 	report func(error),
-	defaultValue *T,
-) T {
-	value, ok := os.LookupEnv(name)
-	if !ok && defaultValue == nil {
+) (variable T, loaded bool) {
+	value, loaded := os.LookupEnv(name)
+	if !loaded && required {
 		report(errors.New("ENV: " + name + " is required"))
-		return *defaultValue
+		return
 	}
-	if !ok && defaultValue != nil {
-		return *defaultValue
+	if !loaded && !required {
+		return
 	}
-	parsed, err := parse(value)
+	variable, err := parse(value)
 	if err != nil {
 		report(errors.New("ENV: " + name + " has invalid value: " + value))
-		return *defaultValue
+		return
 	}
-	return parsed
+	return
 }
 
 type reporter struct {
@@ -75,15 +57,37 @@ func (r *reporter) mergeErrors() error {
 	return err
 }
 
+type Config struct {
+	MAX_URL_LENGTH int
+	ADDR           string
+	LOG_TRAFFIC    bool
+}
+
+const (
+	DEFAULT_ADDR           = ":8000"
+	DEFAULT_MAX_URL_LENGTH = 6
+	DEFAULT_LOG_TRAFFIC    = true
+)
+
+var config = Config{
+	ADDR:           DEFAULT_ADDR,
+	MAX_URL_LENGTH: DEFAULT_MAX_URL_LENGTH,
+	LOG_TRAFFIC:    DEFAULT_LOG_TRAFFIC,
+}
+
 func ParseConfig() error {
 	r := reporter{
 		reportedErrors: []error{},
 	}
-	setConfig(Config{
-		ADDR:           loadVariable("ADDR", noop, r.report, &defaultConfig.ADDR),
-		LOG_TRAFFIC:    loadVariable("LOG_TRAFFIC", strconv.ParseBool, r.report, &defaultConfig.LOG_TRAFFIC),
-		MAX_URL_LENGTH: loadVariable("MAX_URL_LENGTH", strconv.Atoi, r.report, &defaultConfig.MAX_URL_LENGTH),
-	})
+	if ADDR, loaded := loadVariable("ADDR", false, noop, r.report); loaded {
+		config.ADDR = ADDR
+	}
+	if LOG_TRAFFIC, loaded := loadVariable("LOG_TRAFFIC", false, strconv.ParseBool, r.report); loaded {
+		config.LOG_TRAFFIC = LOG_TRAFFIC
+	}
+	if MAX_URL_LENGTH, loaded := loadVariable("MAX_URL_LENGTH", false, strconv.Atoi, r.report); loaded {
+		config.MAX_URL_LENGTH = MAX_URL_LENGTH
+	}
 	return r.mergeErrors()
 }
 

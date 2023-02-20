@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"url-shortener/config"
 	"url-shortener/controllers"
@@ -9,7 +10,10 @@ import (
 )
 
 func main() {
-	config.ParseConfig()
+	err := config.ParseConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", controllers.HashRedirect)
@@ -24,8 +28,8 @@ func main() {
 	}
 
 	fmt.Println("Listening on port " + config.GetConfig().ADDR)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }

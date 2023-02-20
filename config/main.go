@@ -1,8 +1,10 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -23,44 +25,66 @@ func setConfig(newConfig Config) {
 	config = newConfig
 }
 
-func parseStringVariable(name string, defaultValue string) string {
-	value, ok := os.LookupEnv(name)
-	if !ok {
-		return defaultValue
-	}
-	return value
+type primitive interface {
+	string | int | bool
 }
 
-func parseBoolVariable(name string, defaultValue bool) bool {
+func noop(v string) (string, error) {
+	return v, nil
+}
+
+func loadVariable[T primitive](
+	name string,
+	parse func(string) (T, error),
+	report func(error),
+	defaultValue *T,
+) T {
 	value, ok := os.LookupEnv(name)
-	if !ok {
-		return defaultValue
+	if !ok && defaultValue == nil {
+		report(errors.New("ENV: " + name + " is required"))
+		return *defaultValue
 	}
-	parsed, err := strconv.ParseBool(value)
+	if !ok && defaultValue != nil {
+		return *defaultValue
+	}
+	parsed, err := parse(value)
 	if err != nil {
-		return defaultValue
+		report(errors.New("ENV: " + name + " has invalid value: " + value))
+		return *defaultValue
 	}
 	return parsed
 }
 
-func parseIntVariable(name string, defaultValue int) int {
-	value, ok := os.LookupEnv(name)
-	if !ok {
-		return defaultValue
-	}
-	parsed, err := strconv.Atoi(value)
-	if err != nil {
-		return defaultValue
-	}
-	return parsed
+type reporter struct {
+	reportedErrors []error
 }
 
-func ParseConfig() {
+func (r *reporter) report(err error) {
+	r.reportedErrors = append(r.reportedErrors, err)
+}
+
+func (r *reporter) mergeErrors() error {
+	var err error
+	if len(r.reportedErrors) > 0 {
+		errStrings := []string{}
+		for _, err := range r.reportedErrors {
+			errStrings = append(errStrings, err.Error())
+		}
+		err = errors.New(strings.Join(errStrings, ", "))
+	}
+	return err
+}
+
+func ParseConfig() error {
+	r := reporter{
+		reportedErrors: []error{},
+	}
 	setConfig(Config{
-		ADDR:           parseStringVariable("ADDR", defaultConfig.ADDR),
-		LOG_TRAFFIC:    parseBoolVariable("LOG_TRAFFIC", defaultConfig.LOG_TRAFFIC),
-		MAX_URL_LENGTH: parseIntVariable("MAX_URL_LENGTH", defaultConfig.MAX_URL_LENGTH),
+		ADDR:           loadVariable("ADDR", noop, r.report, &defaultConfig.ADDR),
+		LOG_TRAFFIC:    loadVariable("LOG_TRAFFIC", strconv.ParseBool, r.report, &defaultConfig.LOG_TRAFFIC),
+		MAX_URL_LENGTH: loadVariable("MAX_URL_LENGTH", strconv.Atoi, r.report, &defaultConfig.MAX_URL_LENGTH),
 	})
+	return r.mergeErrors()
 }
 
 func GetConfig() *Config {

@@ -2,23 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"url-shortener/controllers"
+	"url-shortener/utils"
 )
-
-const MAX_URL_LENGTH = 6
-
-func logRequestHandler(h http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		h.ServeHTTP(w, r)
-		uri := r.URL.String()
-		method := r.Method
-		log.Println(uri, method)
-	}
-
-	return http.HandlerFunc(fn)
-}
 
 func main() {
 	mux := http.NewServeMux()
@@ -27,7 +14,7 @@ func main() {
 	mux.HandleFunc("/url-shorten", controllers.UrlShorten)
 
 	var handler http.Handler = mux
-	handler = logRequestHandler(handler)
+	handler = utils.AttachLogger(handler)
 
 	srv := &http.Server{
 		Handler: handler,

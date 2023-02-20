@@ -57,7 +57,7 @@ func parseIntVariable(name string, defaultValue int) int {
 
 func ParseConfig() {
 	setConfig(Config{
-		ADDR:           parseStringVariable(os.Getenv("ADDR"), defaultConfig.ADDR),
+		ADDR:           parseStringVariable("ADDR", defaultConfig.ADDR),
 		LOG_TRAFFIC:    parseBoolVariable("LOG_TRAFFIC", defaultConfig.LOG_TRAFFIC),
 		MAX_URL_LENGTH: parseIntVariable("MAX_URL_LENGTH", defaultConfig.MAX_URL_LENGTH),
 	})

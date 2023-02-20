@@ -3,6 +3,7 @@ package utils
 import (
 	"log"
 	"net/http"
+	"url-shortener/config"
 )
 
 type LogRecord struct {
@@ -28,7 +29,8 @@ func AttachLogger(f http.Handler) http.HandlerFunc {
 		}
 
 		f.ServeHTTP(record, r)
-
-		log.Println(method, record.status, uri)
+		if config.GetConfig().LOG_TRAFFIC {
+			log.Println(method, record.status, uri)
+		}
 	}
 }

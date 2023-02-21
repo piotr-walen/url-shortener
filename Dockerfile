@@ -1,7 +1,6 @@
 FROM golang:alpine AS builder
 WORKDIR /build
-# ADD go.mod .
-COPY . .
+COPY app .
 RUN go build -o main main.go
 FROM alpine
 WORKDIR /build

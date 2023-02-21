@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"url-shortener/config"
 	"url-shortener/controllers"
+	"url-shortener/storage"
 	"url-shortener/utils"
 )
 
@@ -14,6 +15,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = storage.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", controllers.HashRedirect)

@@ -1,36 +1,42 @@
 package models
 
-type URLMap map[string]string
+import "url-shortener/storage"
 
-var urlMap URLMap = URLMap{}
+const keyPrefix = "url:"
 
-func (*URLMap) add(key, item string) bool {
-	_, ok := urlMap[key]
-	if !ok {
-		urlMap[key] = item
-		return true
+func prependPrefix(key string) string {
+	return keyPrefix + key
+}
+
+func AddUrl(key, item string) error {
+	hasKey, err := storage.HasKey(prependPrefix(key))
+	if err != nil {
+		return err
 	}
-	return false
+	if !hasKey {
+		return storage.Set(prependPrefix(key), item)
+	}
+	return nil
 }
 
-func (*URLMap) get(key string) (string, bool) {
-	value, ok := urlMap[key]
-	return value, ok
+type Url struct {
+	Value  string
+	Exists bool
 }
 
-func (*URLMap) hasKey(key string) bool {
-	_, ok := urlMap[key]
-	return ok
-}
+func GetUrl(key string) (Url, error) {
+	var url Url
+	hasKey, err := storage.HasKey(prependPrefix(key))
+	url.Exists = hasKey
 
-func AddUrl(key, item string) bool {
-	return urlMap.add(key, item)
-}
+	if err != nil || !hasKey {
+		return url, err
+	}
 
-func GetUrl(key string) (string, bool) {
-	return urlMap.get(key)
-}
-
-func ExistsUrl(key string) bool {
-	return urlMap.hasKey(key)
+	value, err := storage.Get(prependPrefix(key))
+	if err != nil {
+		return url, err
+	}
+	url.Value = value
+	return url, err
 }

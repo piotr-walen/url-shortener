@@ -62,6 +62,9 @@ type Config struct {
 	MAX_URL_LENGTH int
 	ADDR           string
 	LOG_TRAFFIC    bool
+	REDIS_HOST     string
+	REDIS_PORT     string
+	REDIS_PASSWORD string
 }
 
 const (
@@ -83,6 +86,10 @@ func ParseConfig() error {
 	loadVariable("ADDR", false, noop, func(v string) { c.ADDR = v }, r.report)
 	loadVariable("LOG_TRAFFIC", false, strconv.ParseBool, func(v bool) { c.LOG_TRAFFIC = v }, r.report)
 	loadVariable("MAX_URL_LENGTH", false, strconv.Atoi, func(v int) { c.MAX_URL_LENGTH = v }, r.report)
+	loadVariable("REDIS_HOST", true, noop, func(v string) { c.REDIS_HOST = v }, r.report)
+	loadVariable("REDIS_PORT", true, noop, func(v string) { c.REDIS_PORT = v }, r.report)
+	loadVariable("REDIS_PASSWORD", true, noop, func(v string) { c.REDIS_PASSWORD = v }, r.report)
+
 	return r.mergeErrors()
 }
 

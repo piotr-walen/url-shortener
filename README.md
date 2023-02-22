@@ -10,8 +10,13 @@
 ## Running app
 
 ### Using docker / docker-compose
+With building local app image
 ```
-docker-compose up --build
+docker-compose -f docker-compose.dev.yml up --build
+```
+Or using remote image
+```
+docker-compose up
 ```
 
 ### Using minikube / kubectl

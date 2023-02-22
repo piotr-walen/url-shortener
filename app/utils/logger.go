@@ -29,7 +29,7 @@ func AttachLogger(f http.Handler) http.HandlerFunc {
 		}
 
 		f.ServeHTTP(record, r)
-		if config.GetConfig().LOG_TRAFFIC {
+		if config.GetConfig().LogTraffic {
 			log.Println(method, record.status, uri)
 		}
 	}

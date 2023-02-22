@@ -1,8 +1,11 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"flag"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/compose-spec/compose-go/types"
@@ -10,50 +13,82 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func createAppConfig() types.ServiceConfig {
+type AppConfig struct {
+	Name string
+	Port int
+}
+
+type RedisConfig struct {
+	Name         string `json:"name"`
+	Port         int    `json:"port"`
+	ExternalPort int    `json:"-"`
+	Password     string `json:"password"`
+}
+
+func createAppServiceConfig(appConfig AppConfig, redisConfigs []RedisConfig) types.ServiceConfig {
+	b, err := json.Marshal(redisConfigs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dependsOn := types.DependsOnConfig{}
+	defaultServiceDependency := types.ServiceDependency{
+		Condition: "service_started",
+	}
+	for _, c := range redisConfigs {
+		dependsOn[c.Name] = defaultServiceDependency
+	}
+
 	return types.ServiceConfig{
-		Name: "go-app",
+		Name: appConfig.Name,
 		Environment: types.NewMappingWithEquals([]string{
-			"REDIS_HOST=redis-storage",
-			"REDIS_PORT=6379",
-			"REDIS_PASSWORD=1bfb0c6dbfb9d4f7cd0506ae9e88ffb3",
+			"REDIS_CONFIG=" + string(b),
 		}),
-		Image: "walenpiotr/url-shortener:1.0.0",
+		Image: "walenpiotr/url-shortener:1.1.1",
 		Ports: []types.ServicePortConfig{
 			{
-				Target:    8080,
-				Published: "8080",
+				Target:    uint32(appConfig.Port),
+				Published: strconv.Itoa(appConfig.Port),
 			},
 		},
-		DependsOn: types.DependsOnConfig{
-			"redis-storage": types.ServiceDependency{
-				Condition: "service_started",
-			},
-		},
+		DependsOn: dependsOn,
 	}
 }
 
-func createRedisConfig() types.ServiceConfig {
+func createRedisServiceConfig(config RedisConfig) types.ServiceConfig {
 	return types.ServiceConfig{
-		Name:  "redis-storage",
+		Name:  config.Name,
 		Image: "redis:7.0-alpine",
 		Ports: []types.ServicePortConfig{
 			{
-				Target:    6379,
-				Published: "6379",
+				Target:    uint32(config.Port),
+				Published: strconv.Itoa(config.ExternalPort),
 			},
 		},
 		Restart: "always",
-		Command: strings.Split("redis-server --save 20 1 --loglevel warning --requirepass 1bfb0c6dbfb9d4f7cd0506ae9e88ffb3", " "),
+		Command: strings.Split("redis-server --save 20 1 --loglevel warning --requirepass "+config.Password, " "),
 	}
 }
 
 func main() {
+	filename := flag.String("f", "docker-compose.yml", "a filename of generated docker compose file")
+	flag.Parse()
+
+	redisConfigs := []RedisConfig{
+		{Name: "redis-storage-0", Port: 6379, ExternalPort: 63790, Password: "redis-storage-0"},
+		{Name: "redis-storage-1", Port: 6379, ExternalPort: 63791, Password: "redis-storage-1"},
+		{Name: "redis-storage-2", Port: 6379, ExternalPort: 63792, Password: "redis-storage-2"},
+	}
+	appConfig := AppConfig{Name: "go-app", Port: 8000}
+
+	services := types.Services{}
+	for _, config := range redisConfigs {
+		services = append(services, createRedisServiceConfig(config))
+	}
+	services = append(services, createAppServiceConfig(appConfig, redisConfigs))
+
 	project := types.Project{
-		Services: types.Services{
-			createAppConfig(),
-			createRedisConfig(),
-		},
+		Services: services,
 	}
 
 	b, err := yaml.Marshal(project)
@@ -61,5 +96,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(string(b))
+	err = os.WriteFile(*filename, b, 0644)
+	log.Println("Generated " + *filename + " file.")
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }

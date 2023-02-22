@@ -1,21 +1,34 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"strconv"
 	"strings"
 )
 
-type primitive interface {
-	string | int | bool
+type RedisConfig struct {
+	Name     string `json:"name"`
+	Port     int    `json:"port"`
+	Password string `json:"password"`
+}
+
+type variable interface {
+	string | int | bool | []RedisConfig
 }
 
 func noop(v string) (string, error) {
 	return v, nil
 }
 
-func loadVariable[T primitive](
+func parseRedisConfig(s string) ([]RedisConfig, error) {
+	redisConfig := []RedisConfig{}
+	err := json.Unmarshal([]byte(s), &redisConfig)
+	return redisConfig, err
+}
+
+func loadVariable[T variable](
 	name string,
 	required bool,
 	parse func(string) (T, error),
@@ -59,12 +72,10 @@ func (r *reporter) mergeErrors() error {
 }
 
 type Config struct {
-	MAX_URL_LENGTH int
-	ADDR           string
-	LOG_TRAFFIC    bool
-	REDIS_HOST     string
-	REDIS_PORT     string
-	REDIS_PASSWORD string
+	MaxUrlLength int
+	Addr         string
+	LogTraffic   bool
+	RedisConfig  []RedisConfig
 }
 
 const (
@@ -74,21 +85,19 @@ const (
 )
 
 var c = Config{
-	ADDR:           DEFAULT_ADDR,
-	MAX_URL_LENGTH: DEFAULT_MAX_URL_LENGTH,
-	LOG_TRAFFIC:    DEFAULT_LOG_TRAFFIC,
+	Addr:         DEFAULT_ADDR,
+	MaxUrlLength: DEFAULT_MAX_URL_LENGTH,
+	LogTraffic:   DEFAULT_LOG_TRAFFIC,
 }
 
 func ParseConfig() error {
 	r := reporter{
 		reportedErrors: []error{},
 	}
-	loadVariable("ADDR", false, noop, func(v string) { c.ADDR = v }, r.report)
-	loadVariable("LOG_TRAFFIC", false, strconv.ParseBool, func(v bool) { c.LOG_TRAFFIC = v }, r.report)
-	loadVariable("MAX_URL_LENGTH", false, strconv.Atoi, func(v int) { c.MAX_URL_LENGTH = v }, r.report)
-	loadVariable("REDIS_HOST", true, noop, func(v string) { c.REDIS_HOST = v }, r.report)
-	loadVariable("REDIS_PORT", true, noop, func(v string) { c.REDIS_PORT = v }, r.report)
-	loadVariable("REDIS_PASSWORD", true, noop, func(v string) { c.REDIS_PASSWORD = v }, r.report)
+	loadVariable("ADDR", false, noop, func(v string) { c.Addr = v }, r.report)
+	loadVariable("LOG_TRAFFIC", false, strconv.ParseBool, func(v bool) { c.LogTraffic = v }, r.report)
+	loadVariable("MAX_URL_LENGTH", false, strconv.Atoi, func(v int) { c.MaxUrlLength = v }, r.report)
+	loadVariable("REDIS_CONFIG", true, parseRedisConfig, func(v []RedisConfig) { c.RedisConfig = v }, r.report)
 
 	return r.mergeErrors()
 }

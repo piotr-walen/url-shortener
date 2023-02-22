@@ -7,12 +7,18 @@
 
 ## Running app
 
-### Using docker / docker-compose
-With building local app image
+**Generate docker-compose.yml file using**
 ```
-docker-compose -f docker-compose.dev.yml up --build
+go run generate-config/main.go
 ```
-Or using remote image
+
+You can provide -f flag that overrides filename
+
+```
+go run generate-config/main.go -f docker-compose.test.yml
+```
+
+**Run app**
 ```
 docker-compose up
 ```

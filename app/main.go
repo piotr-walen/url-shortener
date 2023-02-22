@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"url-shortener/config"
@@ -31,10 +30,10 @@ func main() {
 
 	srv := &http.Server{
 		Handler: handler,
-		Addr:    config.GetConfig().ADDR,
+		Addr:    config.GetConfig().Addr,
 	}
 
-	fmt.Println("Listening on port " + config.GetConfig().ADDR)
+	log.Println("Listening on port " + config.GetConfig().Addr)
 	err = srv.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)

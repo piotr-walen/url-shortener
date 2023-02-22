@@ -38,7 +38,7 @@ func UrlShorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash := utils.GetShortHash(v.RawPath, config.GetConfig().MAX_URL_LENGTH)
+	hash := utils.GetShortHash(v.RawPath, config.GetConfig().MaxUrlLength)
 	models.AddUrl(hash, payload.Url)
 
 	response := UrlShortenResponse{Hash: hash}

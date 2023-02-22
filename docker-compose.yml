@@ -1,24 +1,60 @@
-version: "3.9"
 services:
   go-app:
-    container_name: go-app
-    image: walenpiotr/url-shortener:1.0.0
-    environment:
-      - REDIS_HOST=redis-storage
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=1bfb0c6dbfb9d4f7cd0506ae9e88ffb3
-    ports:
-      - "8000:8000"
     depends_on:
-      - redis-storage
-
-  redis-storage:
-    image: redis:7.0-alpine
-    restart: always
-    container_name: redis-storage
+      redis-storage-0:
+        condition: service_started
+      redis-storage-1:
+        condition: service_started
+      redis-storage-2:
+        condition: service_started
+    environment:
+      REDIS_CONFIG: '[{"name":"redis-storage-0","port":6379,"password":"redis-storage-0"},{"name":"redis-storage-1","port":6379,"password":"redis-storage-1"},{"name":"redis-storage-2","port":6379,"password":"redis-storage-2"}]'
+    image: walenpiotr/url-shortener:1.1.1
     ports:
-      - '6379:6379'
-    command: redis-server --save 20 1 --loglevel warning --requirepass 1bfb0c6dbfb9d4f7cd0506ae9e88ffb3
-
-
-
+    - target: 8000
+      published: "8000"
+  redis-storage-0:
+    command:
+    - redis-server
+    - --save
+    - "20"
+    - "1"
+    - --loglevel
+    - warning
+    - --requirepass
+    - redis-storage-0
+    image: redis:7.0-alpine
+    ports:
+    - target: 6379
+      published: "63790"
+    restart: always
+  redis-storage-1:
+    command:
+    - redis-server
+    - --save
+    - "20"
+    - "1"
+    - --loglevel
+    - warning
+    - --requirepass
+    - redis-storage-1
+    image: redis:7.0-alpine
+    ports:
+    - target: 6379
+      published: "63791"
+    restart: always
+  redis-storage-2:
+    command:
+    - redis-server
+    - --save
+    - "20"
+    - "1"
+    - --loglevel
+    - warning
+    - --requirepass
+    - redis-storage-2
+    image: redis:7.0-alpine
+    ports:
+    - target: 6379
+      published: "63792"
+    restart: always

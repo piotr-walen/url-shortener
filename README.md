@@ -20,8 +20,7 @@ kubectl apply -f k8s/
 ```
 
 ## Useful commands
-### Generating k8s files
-k8s configutaion files `k8s/*.yaml`  were generated using **Kompose** tool based on `docker-compose.yml`
+Generating k8s files, k8s configutaion files `k8s/*.yaml`  are generated using **Kompose** tool based on `docker-compose.yml`
 ```
 kompose convert -o k8s/
 ```

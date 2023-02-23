@@ -37,6 +37,9 @@ var serverMap = map[string]*redis.Client{}
 
 func GetRedisClient(key string) *redis.Client {
 	serverKey, ok := ring.GetNode(key)
+	if config.GetConfig().LogRedisInstance {
+		log.Println("Using: " + serverKey)
+	}
 	if !ok {
 		return nil
 	}

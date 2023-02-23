@@ -72,22 +72,25 @@ func (r *reporter) mergeErrors() error {
 }
 
 type Config struct {
-	MaxUrlLength int
-	Addr         string
-	LogTraffic   bool
-	RedisConfig  []RedisConfig
+	MaxUrlLength     int
+	Addr             string
+	LogTraffic       bool
+	LogRedisInstance bool
+	RedisConfig      []RedisConfig
 }
 
 const (
-	DEFAULT_ADDR           = ":8000"
-	DEFAULT_MAX_URL_LENGTH = 6
-	DEFAULT_LOG_TRAFFIC    = true
+	DEFAULT_ADDR               = ":8000"
+	DEFAULT_MAX_URL_LENGTH     = 6
+	DEFAULT_LOG_TRAFFIC        = true
+	DEFAULT_LOG_REDIS_INSTANCE = true
 )
 
 var c = Config{
-	Addr:         DEFAULT_ADDR,
-	MaxUrlLength: DEFAULT_MAX_URL_LENGTH,
-	LogTraffic:   DEFAULT_LOG_TRAFFIC,
+	Addr:             DEFAULT_ADDR,
+	MaxUrlLength:     DEFAULT_MAX_URL_LENGTH,
+	LogTraffic:       DEFAULT_LOG_TRAFFIC,
+	LogRedisInstance: DEFAULT_LOG_REDIS_INSTANCE,
 }
 
 func ParseConfig() error {
@@ -96,6 +99,7 @@ func ParseConfig() error {
 	}
 	loadVariable("ADDR", false, noop, func(v string) { c.Addr = v }, r.report)
 	loadVariable("LOG_TRAFFIC", false, strconv.ParseBool, func(v bool) { c.LogTraffic = v }, r.report)
+	loadVariable("LOG_REDIS_INSTANCE", false, strconv.ParseBool, func(v bool) { c.LogTraffic = v }, r.report)
 	loadVariable("MAX_URL_LENGTH", false, strconv.Atoi, func(v int) { c.MaxUrlLength = v }, r.report)
 	loadVariable("REDIS_CONFIG", true, parseRedisConfig, func(v []RedisConfig) { c.RedisConfig = v }, r.report)
 

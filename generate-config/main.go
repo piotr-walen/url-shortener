@@ -13,6 +13,25 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var FILENAME *string
+var DEV *bool
+var REDIS_IMAGE *string
+var APP_IMAGE *string
+var NUM_SHARDS *int
+
+func parseFlags() {
+	FILENAME = flag.String("f", "docker-compose.yml", "a filename of generated docker compose file")
+	DEV = flag.Bool("d", false, "generate dev file")
+	REDIS_IMAGE = flag.String("ri", "redis:7.0-alpine", "redis image name")
+	APP_IMAGE = flag.String("ai", "walenpiotr/url-shortener:1.1.3", "app image name")
+	NUM_SHARDS = flag.Int("n", 3, "number of redis shards")
+	flag.Parse()
+
+	if *NUM_SHARDS < 1 || *NUM_SHARDS > 10 {
+		log.Fatal("Number of redis shards should be between 1 and 10")
+	}
+}
+
 type AppConfig struct {
 	Name string
 	Port int
@@ -21,7 +40,7 @@ type AppConfig struct {
 type RedisConfig struct {
 	Name         string `json:"name"`
 	Port         int    `json:"port"`
-	ExternalPort int    `json:"-"`
+	ExternalPort string `json:"-"`
 	Password     string `json:"password"`
 }
 
@@ -71,7 +90,7 @@ func createRedisServiceConfig(config RedisConfig) types.ServiceConfig {
 		Ports: []types.ServicePortConfig{
 			{
 				Target:    uint32(config.Port),
-				Published: strconv.Itoa(config.ExternalPort),
+				Published: config.ExternalPort,
 			},
 		},
 		Restart: "always",
@@ -79,25 +98,23 @@ func createRedisServiceConfig(config RedisConfig) types.ServiceConfig {
 	}
 }
 
-var FILENAME *string
-var DEV *bool
-var REDIS_IMAGE *string
-var APP_IMAGE *string
+func generateRedisConfigs() []RedisConfig {
+	redisConfigs := []RedisConfig{}
+	for i := 0; i < *NUM_SHARDS; i++ {
+		iStr := strconv.Itoa(i)
+		redisConfigs = append(
+			redisConfigs,
+			RedisConfig{Name: "redis-storage-" + iStr, Port: 6379, ExternalPort: "6379" + iStr, Password: "redis-storage-" + iStr},
+		)
+	}
+	return redisConfigs
+}
 
 func main() {
-	FILENAME = flag.String("f", "docker-compose.yml", "a filename of generated docker compose file")
-	DEV = flag.Bool("d", false, "generate dev file")
-	REDIS_IMAGE = flag.String("ri", "redis:7.0-alpine", "redis image name")
-	APP_IMAGE = flag.String("ai", "walenpiotr/url-shortener:1.1.3", "app image name")
+	parseFlags()
 
-	flag.Parse()
-
-	redisConfigs := []RedisConfig{
-		{Name: "redis-storage-0", Port: 6379, ExternalPort: 63790, Password: "redis-storage-0"},
-		{Name: "redis-storage-1", Port: 6379, ExternalPort: 63791, Password: "redis-storage-1"},
-		{Name: "redis-storage-2", Port: 6379, ExternalPort: 63792, Password: "redis-storage-2"},
-	}
 	appConfig := AppConfig{Name: "go-app", Port: 8000}
+	redisConfigs := generateRedisConfigs()
 
 	services := types.Services{}
 	for _, config := range redisConfigs {

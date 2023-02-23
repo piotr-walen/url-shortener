@@ -39,12 +39,11 @@ func createAppServiceConfig(appConfig AppConfig, redisConfigs []RedisConfig) typ
 		dependsOn[c.Name] = defaultServiceDependency
 	}
 
-	return types.ServiceConfig{
+	config := types.ServiceConfig{
 		Name: appConfig.Name,
 		Environment: types.NewMappingWithEquals([]string{
 			"REDIS_CONFIG=" + string(b),
 		}),
-		Image: "walenpiotr/url-shortener:1.1.1",
 		Ports: []types.ServicePortConfig{
 			{
 				Target:    uint32(appConfig.Port),
@@ -53,12 +52,22 @@ func createAppServiceConfig(appConfig AppConfig, redisConfigs []RedisConfig) typ
 		},
 		DependsOn: dependsOn,
 	}
+
+	if *DEV {
+		config.Build = &types.BuildConfig{
+			Context: ".",
+		}
+	} else {
+		config.Image = *APP_IMAGE
+	}
+
+	return config
 }
 
 func createRedisServiceConfig(config RedisConfig) types.ServiceConfig {
 	return types.ServiceConfig{
 		Name:  config.Name,
-		Image: "redis:7.0-alpine",
+		Image: *REDIS_IMAGE,
 		Ports: []types.ServicePortConfig{
 			{
 				Target:    uint32(config.Port),
@@ -70,8 +79,17 @@ func createRedisServiceConfig(config RedisConfig) types.ServiceConfig {
 	}
 }
 
+var FILENAME *string
+var DEV *bool
+var REDIS_IMAGE *string
+var APP_IMAGE *string
+
 func main() {
-	filename := flag.String("f", "docker-compose.yml", "a filename of generated docker compose file")
+	FILENAME = flag.String("f", "docker-compose.yml", "a filename of generated docker compose file")
+	DEV = flag.Bool("d", false, "generate dev file")
+	REDIS_IMAGE = flag.String("ri", "redis:7.0-alpine", "redis image name")
+	APP_IMAGE = flag.String("ai", "walenpiotr/url-shortener:1.1.3", "app image name")
+
 	flag.Parse()
 
 	redisConfigs := []RedisConfig{
@@ -96,8 +114,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = os.WriteFile(*filename, b, 0644)
-	log.Println("Generated " + *filename + " file.")
+	err = os.WriteFile(*FILENAME, b, 0644)
+	log.Println("Generated " + *FILENAME + " file.")
 
 	if err != nil {
 		log.Fatal(err)

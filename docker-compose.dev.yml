@@ -25,9 +25,6 @@ services:
     - --requirepass
     - redis-storage-0
     image: redis:7.0-alpine
-    ports:
-    - target: 6379
-      published: "63790"
     restart: always
   redis-storage-1:
     command:
@@ -40,9 +37,6 @@ services:
     - --requirepass
     - redis-storage-1
     image: redis:7.0-alpine
-    ports:
-    - target: 6379
-      published: "63791"
     restart: always
   redis-storage-2:
     command:
@@ -55,7 +49,4 @@ services:
     - --requirepass
     - redis-storage-2
     image: redis:7.0-alpine
-    ports:
-    - target: 6379
-      published: "63792"
     restart: always

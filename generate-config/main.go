@@ -27,8 +27,8 @@ func parseFlags() {
 	NUM_SHARDS = flag.Int("n", 3, "number of redis shards")
 	flag.Parse()
 
-	if *NUM_SHARDS < 1 || *NUM_SHARDS > 10 {
-		log.Fatal("Number of redis shards should be between 1 and 10")
+	if *NUM_SHARDS < 1 {
+		log.Fatal("Invalid number of shards.")
 	}
 }
 
@@ -38,10 +38,9 @@ type AppConfig struct {
 }
 
 type RedisConfig struct {
-	Name         string `json:"name"`
-	Port         int    `json:"port"`
-	ExternalPort string `json:"-"`
-	Password     string `json:"password"`
+	Name     string `json:"name"`
+	Port     int    `json:"port"`
+	Password string `json:"password"`
 }
 
 func createAppServiceConfig(appConfig AppConfig, redisConfigs []RedisConfig) types.ServiceConfig {
@@ -85,14 +84,8 @@ func createAppServiceConfig(appConfig AppConfig, redisConfigs []RedisConfig) typ
 
 func createRedisServiceConfig(config RedisConfig) types.ServiceConfig {
 	return types.ServiceConfig{
-		Name:  config.Name,
-		Image: *REDIS_IMAGE,
-		Ports: []types.ServicePortConfig{
-			{
-				Target:    uint32(config.Port),
-				Published: config.ExternalPort,
-			},
-		},
+		Name:    config.Name,
+		Image:   *REDIS_IMAGE,
 		Restart: "always",
 		Command: strings.Split("redis-server --save 20 1 --loglevel warning --requirepass "+config.Password, " "),
 	}
@@ -104,7 +97,7 @@ func generateRedisConfigs() []RedisConfig {
 		iStr := strconv.Itoa(i)
 		redisConfigs = append(
 			redisConfigs,
-			RedisConfig{Name: "redis-storage-" + iStr, Port: 6379, ExternalPort: "6379" + iStr, Password: "redis-storage-" + iStr},
+			RedisConfig{Name: "redis-storage-" + iStr, Port: 6379, Password: "redis-storage-" + iStr},
 		)
 	}
 	return redisConfigs

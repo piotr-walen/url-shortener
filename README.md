@@ -27,7 +27,7 @@ You can override default image names by using `-ai` - app image and `-ri` - redi
 go run generate-config/main.go -ai=walenpiotr/url-shortener:1.1.x -ri=redis:7.x-alpine
 ```
 
-To specify number of redis shards u `-n` flag (min=1, max=10, default=3)
+To specify number of redis shards u `-n` flag (min=1)
 ```
 go run generate-config/main.go -n=6
 ```

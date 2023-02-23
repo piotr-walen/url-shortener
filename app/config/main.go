@@ -99,7 +99,7 @@ func ParseConfig() error {
 	}
 	loadVariable("ADDR", false, noop, func(v string) { c.Addr = v }, r.report)
 	loadVariable("LOG_TRAFFIC", false, strconv.ParseBool, func(v bool) { c.LogTraffic = v }, r.report)
-	loadVariable("LOG_REDIS_INSTANCE", false, strconv.ParseBool, func(v bool) { c.LogTraffic = v }, r.report)
+	loadVariable("LOG_REDIS_INSTANCE", false, strconv.ParseBool, func(v bool) { c.LogRedisInstance = v }, r.report)
 	loadVariable("MAX_URL_LENGTH", false, strconv.Atoi, func(v int) { c.MaxUrlLength = v }, r.report)
 	loadVariable("REDIS_CONFIG", true, parseRedisConfig, func(v []RedisConfig) { c.RedisConfig = v }, r.report)
 

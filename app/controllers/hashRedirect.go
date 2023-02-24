@@ -1,14 +1,20 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strings"
 	"url-shortener/models"
 )
 
 func HashRedirect(w http.ResponseWriter, r *http.Request) {
-	hash := strings.TrimPrefix(r.URL.Path, "/")
-	url, err := models.GetUrl(hash)
+	params := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
+	namespace := params[0]
+	segment := params[1]
+
+	log.Println(namespace, segment)
+
+	url, err := models.GetUrl(namespace, segment)
 	if err != nil {
 		http.Error(w, "Error while resolving url", http.StatusInternalServerError)
 		return

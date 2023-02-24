@@ -2,20 +2,39 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
-	"url-shortener/config"
+	"regexp"
 	"url-shortener/models"
-	"url-shortener/utils"
 )
 
 type UrlShortenBody struct {
-	Url string `json:"url"`
+	TargetUrl string `json:"targetUrl"`
+	Namespace string `json:"namespace"`
+	Segment   string `json:"segment"`
 }
 
-type UrlShortenResponse struct {
-	Hash string `json:"hash"`
+var alfanumericRegex = regexp.MustCompile(`^\w+$`)
+
+func (p *UrlShortenBody) validate() error {
+	errs := []error{}
+
+	_, err := url.ParseRequestURI(p.TargetUrl)
+	if err != nil {
+		errs = append(errs, errors.New("invalid targetUrl field"))
+	}
+	if ok := alfanumericRegex.MatchString(p.Namespace); !ok {
+		errs = append(errs, errors.New("invalid namespace field"))
+	}
+	if ok := alfanumericRegex.MatchString(p.Segment); !ok {
+		errs = append(errs, errors.New("invalid segment field"))
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
 }
 
 func UrlShorten(w http.ResponseWriter, r *http.Request) {
@@ -32,23 +51,22 @@ func UrlShorten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := url.ParseRequestURI(payload.Url)
+	err = payload.validate()
 	if err != nil {
-		http.Error(w, "Malformed url in request body", http.StatusBadRequest)
+		http.Error(w, "Malformed request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	hash := utils.GetShortHash(v.String(), config.GetConfig().MaxUrlLength)
+	ok, err := models.AddUrl(payload.Namespace, payload.Segment, payload.TargetUrl)
+	if err != nil {
+		http.Error(w, "Error when adding url", http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		http.Error(w, "Url already exists", http.StatusConflict)
+		return
+	}
 
-	models.AddUrl(hash, payload.Url)
-
-	response := UrlShortenResponse{Hash: hash}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		http.Error(w, "Cannot send request response", http.StatusInternalServerError)
-		return
-	}
-
 }

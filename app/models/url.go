@@ -2,6 +2,8 @@ package models
 
 import (
 	"url-shortener/storage"
+
+	"github.com/redis/go-redis/v9"
 )
 
 const keyPrefix = "url:"
@@ -19,19 +21,14 @@ type GetResult struct {
 	Exists bool
 }
 
-func GetUrl(namespace, segment string) (GetResult, error) {
-	var result GetResult
-	hasKey, err := storage.HasKey(namespace, formatKey(namespace, segment))
-	result.Exists = hasKey
-
-	if err != nil || !hasKey {
-		return result, err
-	}
-
+func GetUrl(namespace, segment string) (*GetResult, error) {
 	value, err := storage.Get(namespace, formatKey(namespace, segment))
-	if err != nil {
-		return result, err
+
+	if err == redis.Nil {
+		return &GetResult{Exists: false}, nil
 	}
-	result.Value = value
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	return &GetResult{Exists: true, Value: value}, nil
 }

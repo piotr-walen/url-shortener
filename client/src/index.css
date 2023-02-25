@@ -1,0 +1,4 @@
+input[type='button']:focus {
+  background-color: #9b4dca !important;
+  border-color: #9b4dca !important;
+}

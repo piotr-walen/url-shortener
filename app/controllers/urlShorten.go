@@ -16,7 +16,9 @@ type UrlShortenBody struct {
 	Segment   string `json:"segment"`
 }
 
-var alfanumericRegex = regexp.MustCompile(`^\w+$`)
+// Base 64 Encoding with URL and Filename Safe Alphabet
+// https://datatracker.ietf.org/doc/html/rfc4648#section-5
+var filenameSafeRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 func (p *UrlShortenBody) validate() error {
 	errs := []error{}
@@ -25,10 +27,10 @@ func (p *UrlShortenBody) validate() error {
 	if err != nil {
 		errs = append(errs, errors.New("invalid targetUrl field"))
 	}
-	if ok := alfanumericRegex.MatchString(p.Namespace); !ok {
+	if ok := filenameSafeRegex.MatchString(p.Namespace); !ok {
 		errs = append(errs, errors.New("invalid namespace field"))
 	}
-	if ok := alfanumericRegex.MatchString(p.Segment); !ok {
+	if ok := filenameSafeRegex.MatchString(p.Segment); !ok {
 		errs = append(errs, errors.New("invalid segment field"))
 	}
 	if len(errs) > 0 {

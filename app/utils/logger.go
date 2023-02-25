@@ -3,34 +3,20 @@ package utils
 import (
 	"log"
 	"net/http"
-	"url-shortener/config"
+	"time"
 )
 
-type LogRecord struct {
-	http.ResponseWriter
-	status int
+type Logger struct {
+	handler http.Handler
 }
 
-func (r *LogRecord) Write(p []byte) (int, error) {
-	return r.ResponseWriter.Write(p)
+func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	l.handler.ServeHTTP(w, r)
+
+	log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
 }
 
-func (r *LogRecord) WriteHeader(status int) {
-	r.status = status
-	r.ResponseWriter.WriteHeader(status)
-}
-
-func AttachLogger(f http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		uri := r.URL.String()
-		method := r.Method
-		record := &LogRecord{
-			ResponseWriter: w,
-		}
-
-		f.ServeHTTP(record, r)
-		if config.GetConfig().LogTraffic {
-			log.Println(method, record.status, uri)
-		}
-	}
+func NewLogger(handlerToWrap http.Handler) *Logger {
+	return &Logger{handlerToWrap}
 }

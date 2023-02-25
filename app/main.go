@@ -26,7 +26,7 @@ func main() {
 	mux.HandleFunc("/url-shorten", controllers.UrlShorten)
 
 	var handler http.Handler = mux
-	handler = utils.AttachLogger(handler)
+	handler = utils.NewLogger(utils.NewCorsHeaders(handler))
 
 	srv := &http.Server{
 		Handler: handler,

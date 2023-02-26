@@ -1,7 +1,25 @@
 services:
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    depends_on:
+      go-app:
+        condition: service_started
+    ports:
+    - target: 5173
+      published: "5173"
+    volumes:
+    - type: bind
+      source: ./client
+      target: /node/app
+      consistency: delegated
+    - type: volume
+      target: /node/app/node_modules
   go-app:
     build:
-      context: .
+      context: ./app
+      dockerfile: Dockerfile.dev
     depends_on:
       redis-storage-0:
         condition: service_started
@@ -14,6 +32,11 @@ services:
     ports:
     - target: 8000
       published: "8000"
+    volumes:
+    - type: bind
+      source: ./app
+      target: /app
+      consistency: delegated
   redis-storage-0:
     command:
     - redis-server

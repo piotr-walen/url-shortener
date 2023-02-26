@@ -1,0 +1,6 @@
+FROM node:19-alpine AS development
+WORKDIR /node
+COPY package*.json tsconfig.json ./
+RUN npm install
+WORKDIR /node/app
+CMD ["npm", "run", "dev"]

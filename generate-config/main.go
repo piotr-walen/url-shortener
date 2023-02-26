@@ -14,16 +14,20 @@ import (
 )
 
 var FILENAME *string
-var DEV *bool
+var DEV_HMR *bool
+var DEV_BUILD *bool
 var REDIS_IMAGE *string
 var APP_IMAGE *string
 var NUM_SHARDS *int
+var CLIENT_IMAGE *string
 
 func parseFlags() {
 	FILENAME = flag.String("f", "docker-compose.yml", "a filename of generated docker compose file")
-	DEV = flag.Bool("d", false, "generate dev file")
+	DEV_BUILD = flag.Bool("db", false, "generate dev file that allows building images from local files")
+	DEV_HMR = flag.Bool("dh", false, "generate dev file that allows hot reloading")
 	REDIS_IMAGE = flag.String("ri", "redis:7.0-alpine", "redis image name")
 	APP_IMAGE = flag.String("ai", "walenpiotr/url-shortener:1.1.3", "app image name")
+	CLIENT_IMAGE = flag.String("ci", "nginx:1.23", "client image name")
 	NUM_SHARDS = flag.Int("n", 3, "number of redis shards")
 	flag.Parse()
 
@@ -41,6 +45,48 @@ type RedisConfig struct {
 	Name     string `json:"name"`
 	Port     int    `json:"port"`
 	Password string `json:"password"`
+}
+
+type ClientConfig struct {
+	Name string
+	Port int
+}
+
+func createClientServiceConfig(clientConfig ClientConfig, appConfig AppConfig) types.ServiceConfig {
+	dependsOn := types.DependsOnConfig{}
+	dependsOn[appConfig.Name] = types.ServiceDependency{
+		Condition: "service_started",
+	}
+	config := types.ServiceConfig{
+		Name: clientConfig.Name,
+		Ports: []types.ServicePortConfig{
+			{
+				Target:    uint32(clientConfig.Port),
+				Published: strconv.Itoa(clientConfig.Port),
+			},
+		},
+		DependsOn: dependsOn,
+	}
+
+	if *DEV_BUILD {
+		config.Build = &types.BuildConfig{
+			Context:    "./client",
+			Dockerfile: "Dockerfile.prod",
+		}
+	} else if *DEV_HMR {
+		config.Build = &types.BuildConfig{
+			Context:    "./client",
+			Dockerfile: "Dockerfile.dev",
+		}
+		config.Volumes = []types.ServiceVolumeConfig{
+			{Type: "bind", Source: "./client", Target: "/node/app", Consistency: "delegated"}, // delegated = improved performance when changing files on host
+			{Type: "volume", Target: "/node/app/node_modules"},                                // Anonymous volume to exclude hosts node_modules
+		}
+	} else {
+		config.Image = *CLIENT_IMAGE
+	}
+
+	return config
 }
 
 func createAppServiceConfig(appConfig AppConfig, redisConfigs []RedisConfig) types.ServiceConfig {
@@ -71,9 +117,18 @@ func createAppServiceConfig(appConfig AppConfig, redisConfigs []RedisConfig) typ
 		DependsOn: dependsOn,
 	}
 
-	if *DEV {
+	if *DEV_BUILD {
 		config.Build = &types.BuildConfig{
-			Context: ".",
+			Context:    "./app",
+			Dockerfile: "Dockerfile.prod",
+		}
+	} else if *DEV_HMR {
+		config.Build = &types.BuildConfig{
+			Context:    "./app",
+			Dockerfile: "Dockerfile.dev",
+		}
+		config.Volumes = []types.ServiceVolumeConfig{
+			{Type: "bind", Source: "./app", Target: "/app", Consistency: "delegated"}, // delegated = improved performance when changing files on host
 		}
 	} else {
 		config.Image = *APP_IMAGE
@@ -107,6 +162,8 @@ func main() {
 	parseFlags()
 
 	appConfig := AppConfig{Name: "go-app", Port: 8000}
+	clientConfig := ClientConfig{Name: "client", Port: 5173}
+
 	redisConfigs := generateRedisConfigs()
 
 	services := types.Services{}
@@ -114,6 +171,7 @@ func main() {
 		services = append(services, createRedisServiceConfig(config))
 	}
 	services = append(services, createAppServiceConfig(appConfig, redisConfigs))
+	services = append(services, createClientServiceConfig(clientConfig, appConfig))
 
 	project := types.Project{
 		Services: services,

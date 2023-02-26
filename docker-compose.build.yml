@@ -1,13 +1,18 @@
 services:
   client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.prod
     depends_on:
       go-app:
         condition: service_started
-    image: walenpiotr/url-shortener-client:1.1.3
     ports:
-    - target: 3000
-      published: "3000"
+    - target: 5173
+      published: "5173"
   go-app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.prod
     depends_on:
       redis-storage-0:
         condition: service_started
@@ -17,7 +22,6 @@ services:
         condition: service_started
     environment:
       REDIS_CONFIG: '[{"name":"redis-storage-0","port":6379,"password":"redis-storage-0"},{"name":"redis-storage-1","port":6379,"password":"redis-storage-1"},{"name":"redis-storage-2","port":6379,"password":"redis-storage-2"}]'
-    image: walenpiotr/url-shortener:1.1.3
     ports:
     - target: 8000
       published: "8000"

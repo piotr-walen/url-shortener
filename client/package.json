@@ -9,9 +9,11 @@
     "preview": "vite preview",
     "lint": "rome check .",
     "format": "rome format --write .",
-    "test": "vitest"
+    "test": "vitest",
+    "storybook": "ladle serve"
   },
   "dependencies": {
+    "@ladle/react": "^2.9.0",
     "milligram": "^1.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

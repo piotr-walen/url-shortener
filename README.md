@@ -1,9 +1,14 @@
 # URL Shortener
 
-## Stack
-- Go
-- Redis
-- Docker
+This is a URL shortener application that allows users to create custom short URLs with namespaces and aliases. 
+The custom short URLs are created in the following format: `http://url-shortener-domain/${namespace}/${alias}`.
+
+The app backend is built using Go and it uses Redis as datastore. 
+It also has a custom sharding mechanism using the hashring library from http://github.com/serialx/hashring. 
+Additionally, there is a custom script that generates a Docker Compose configuration file that allows for the spawning of multiple Redis shards.
+
+The browser client is built using Vite and React.
+
 
 ## Running app
 

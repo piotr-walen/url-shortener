@@ -1,5 +1,10 @@
 :root {
-    /* milligram colors pallette */
+    color-scheme: light dark;
+
+    /* 
+    milligram colors reference pallette
+    changing these wont override default milligram colors 
+    */
     --color-initial: #fff;
     --color-primary: #9b4dca;
     --color-secondary: #606c76;
@@ -8,5 +13,13 @@
     --color-quinary: #e1e1e1;
 
     /* app colors */
+    --color-background: var(--color-initial);
     --color-error: crimson;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* app colors */
+        --color-background: #000;
+    }
 }

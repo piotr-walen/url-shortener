@@ -1,12 +1,20 @@
-import React from "react";
+import './Loader.css'; 
 
-export function Loader() {
+export function Loader({
+	type
+}: {
+	type?: 'primary' | 'secondary' | 'tertiary' | 'quaternary' | 'quinary';
+}) {
 	return (
-		<div className="lds-ellipsis">
+		<div className={`lds-ellipsis ${type}`}>
 			<div />
 			<div />
 			<div />
 			<div />
 		</div>
 	);
+}
+
+Loader.defaultProps = {
+	type: 'primary'
 }

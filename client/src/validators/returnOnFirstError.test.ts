@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { returnOnFirstError } from "../returnOnFirstError";
+import { returnOnFirstError } from "./returnOnFirstError";
 
 describe("returnOnFirstError", () => {
 	it("should return first error", () => {

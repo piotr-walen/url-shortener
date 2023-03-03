@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { required } from "../required";
+import { required } from "./required";
 
 
 describe("required", () => {

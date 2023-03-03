@@ -29,9 +29,9 @@ function App() {
 					fieldName: "Namespace",
 				},
 			),
-			segment: returnOnFirstError(required, validateFilenameSafe)(
+			segment: returnOnFirstError(required, validateFilenameSafe)( // TODO: refactor to field to "alias"
 				state.formValues.segment,
-				{ fieldName: "Segment" },
+				{ fieldName: "Alias" },
 			),
 		}),
 		[state.formValues],
@@ -66,7 +66,6 @@ function App() {
 				shorten(state.formValues)
 					.then((response) => {
 						if (response.status === 201) {
-							console.log(response);
 							dispatch({
 								type: "shortenSuccess",
 								data: {

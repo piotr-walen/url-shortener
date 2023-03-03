@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateFilenameSafe } from "../validateFilenameSafe";
+import { validateFilenameSafe } from "./validateFilenameSafe";
 
 
 describe("required", () => {

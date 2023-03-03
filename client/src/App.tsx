@@ -64,36 +64,27 @@ function App() {
 			if (state.step === "second") {
 				dispatch({ type: "shorten" });
 				shorten(state.formValues)
-					.then((response) => {
-						if (response.status === 201) {
+					.then(response => {
+						if (response.status === "created") {
 							dispatch({
-								type: "shortenSuccess",
+								type: "shortenCreated",
 								data: {
-									status: "created",
 									resultUrl: `${BASE_URL}/${state.formValues.namespace}/${state.formValues.segment}`,
 								},
 							});
 							dispatch({ type: "nextStep" });
 							return;
 						}
-						if (response.status === 409) {
+						if (response.status === "alreadyExists") {
 							dispatch({
-								type: "shortenFailed",
-								data: { status: "alreadyExists" },
+								type: "shortenAlreadyExists",
 							});
 							return;
 						}
-						if (response.status === 400) {
-							dispatch({
-								type: "shortenFailed",
-								data: { status: "invalidPayload" },
-							});
-							return;
-						}
-						dispatch({ type: "shortenFailed", data: { status: "error" } });
+						dispatch({ type: "shortenFailed" });
 					})
-					.catch((error) => {
-						dispatch({ type: "shortenFailed", data: { status: "error" } });
+					.catch(() => {
+						dispatch({ type: "shortenFailed"  });
 					});
 				return;
 			}
@@ -136,7 +127,7 @@ function App() {
 			return null;
 		}
 		if (errorStatus === "alreadyExists") {
-			return <sub>{"Url is already taken. Pl.ease enter another alias."}</sub>;
+			return <sub>{"Url is already taken. Please enter another alias."}</sub>;
 		}
 		return (
 			<sub>

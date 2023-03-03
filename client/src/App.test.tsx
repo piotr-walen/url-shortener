@@ -1,14 +1,14 @@
 // import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from './App';
 
-vi.mock("./api/shorten", async () => {
-  return {
-    shorten: vi.fn().mockImplementation(async () => ({ status: 201 })),
-  };
-})
+import { shorten, ShortenStatus } from "./api/shorten";
+
+vi.mock("./api/shorten", () => ({ shorten: vi.fn() }));
+
+
 
 describe("App", () => {
   it('should render "Log in" text on initial view', () => {
@@ -40,6 +40,8 @@ describe("App", () => {
   });
 
   it('should allow to submit when all data is entered correctly', async () => {
+    vi.mocked(shorten).mockImplementationOnce(async () => ({ status: 'created' as ShortenStatus }))
+
     render(<App />);
     const namespaceInput: HTMLInputElement = screen.getByLabelText('Namespace');
     fireEvent.change(namespaceInput, { target: { value: "test" } });
@@ -51,10 +53,8 @@ describe("App", () => {
     
     fireEvent.click(screen.getByText('Next'));
     
-    await waitFor(() => {
-      expect(screen.getByText("Here's your new url")).toBeDefined()
-      expect(screen.getByText("http://localhost:8000/test/vitest")).toBeDefined()
-    });
+    await waitFor(() => expect(screen.getByText("Here's your new url")).toBeDefined())
+    await waitFor(() => expect(screen.getByText("http://localhost:8000/test/vitest")).toBeDefined())
   });
 
   it('should render error when namespace invalid', () => {
@@ -104,4 +104,40 @@ describe("App", () => {
 
     expect(screen.getByText('Target URL is required')).toBeDefined();
   });
+
+  it('should render generic error when server responds with error', async () => {
+    vi.mocked(shorten).mockImplementationOnce(async () => Promise.resolve({ status: 'serverError' as ShortenStatus }))
+
+    render(<App />);
+
+    const namespaceInput: HTMLInputElement = screen.getByLabelText('Namespace');
+    fireEvent.change(namespaceInput, { target: { value: "test" } });
+    fireEvent.click(screen.getByText('Next'));
+    const urlInput: HTMLInputElement = screen.getByLabelText('Target URL');
+    const segmentInput: HTMLInputElement = screen.getByLabelText('Alias');
+    fireEvent.change(urlInput, { target: { value: "https://vitest.dev" } });
+    fireEvent.change(segmentInput, { target: { value: "vitest" } });
+    
+    fireEvent.click(screen.getByText('Next'));
+
+    await waitFor(() => expect(screen.getByText("Internal error.", { exact: false })).toBeDefined())
+  })
+
+  it('should render generic error when server responds with already exists status', async () => {
+    vi.mocked(shorten).mockImplementationOnce(async () => Promise.resolve({ status: 'alreadyExists' as ShortenStatus }))
+
+    render(<App />);
+
+    const namespaceInput: HTMLInputElement = screen.getByLabelText('Namespace');
+    fireEvent.change(namespaceInput, { target: { value: "test" } });
+    fireEvent.click(screen.getByText('Next'));
+    const urlInput: HTMLInputElement = screen.getByLabelText('Target URL');
+    const segmentInput: HTMLInputElement = screen.getByLabelText('Alias');
+    fireEvent.change(urlInput, { target: { value: "https://vitest.dev" } });
+    fireEvent.change(segmentInput, { target: { value: "vitest" } });
+    
+    fireEvent.click(screen.getByText('Next'));
+
+    await waitFor(() => expect(screen.getByText("Url is already taken. Please enter another alias.")).toBeDefined())
+  })
 });

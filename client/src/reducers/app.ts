@@ -2,11 +2,9 @@ export type Action =
 	| { type: "nextStep" }
 	| { type: "prevStep" }
 	| { type: "shorten" }
-	| { type: "shortenSuccess"; data: { status: "created"; resultUrl: string } }
-	| {
-			type: "shortenFailed";
-			data: { status: "error" | "invalidPayload" | "alreadyExists" };
-	  }
+	| { type: "shortenCreated"; data: { resultUrl: string } }
+	| { type: "shortenAlreadyExists" }
+	| { type: "shortenFailed" }
 	| { type: "setNamespace"; data: { value: string } }
 	| { type: "setTargetUrl"; data: { value: string } }
 	| { type: "setSegment"; data: { value: string } };
@@ -38,7 +36,7 @@ export type State = {
 		segment: string;
 	};
 	resultUrl: string;
-	errorStatus: "error" | "invalidPayload" | "alreadyExists" | "";
+	errorStatus: "error" | "alreadyExists" | "";
 };
 
 export const initialState: State = {
@@ -73,19 +71,26 @@ export function reducer(state: State, action: Action): State {
 				resultUrl: initialState.resultUrl,
 				errorStatus: initialState.errorStatus,
 			};
-		case "shortenSuccess":
+		case "shortenCreated":
 			return {
 				...state,
 				isFetching: false,
 				resultUrl: action.data.resultUrl,
 				errorStatus: initialState.errorStatus,
 			};
+		case "shortenAlreadyExists":
+			return {
+				...state,
+				isFetching: false,
+				resultUrl: initialState.resultUrl,
+				errorStatus: "alreadyExists",
+			};
 		case "shortenFailed":
 			return {
 				...state,
 				isFetching: false,
 				resultUrl: initialState.resultUrl,
-				errorStatus: action.data.status,
+				errorStatus: "error",
 			};
 		case "setNamespace":
 			return {
